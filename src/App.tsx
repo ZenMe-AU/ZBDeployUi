@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Card, CardContent, Typography, Button, IconButton } from "@mui/material";
+import { Box, Card, CardContent, Typography, Button, IconButton, Select, MenuItem } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PlanView from "./planView";
@@ -23,31 +23,9 @@ const stagePathMap: Record<string, string> = {
   c05: "c05rootrg",
 };
 
-const GITHUB_TOKEN = process.env.REACT_APP_GITHUB_TOKEN;
-async function triggerWorkflow(env: Record<string, string>) {
-  if (!GITHUB_TOKEN) {
-    throw new Error("GITHUB_TOKEN is not defined");
-  }
-  console.log("Triggering workflow with env", env);
-  return await fetch("https://api.github.com/repos/ZenMe-AU/ZBCorpArchitecture/actions/workflows/planChanges.yml/dispatches", {
-    method: "POST",
-    headers: {
-      Authorization: `token ${GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-    },
-    body: JSON.stringify({
-      ref: "dev",
-      inputs: {
-        env: JSON.stringify(env),
-      },
-    }),
-  });
-}
+const url = import.meta.env.VITE_API_URL;
 
 async function triggerDeploy({ run_id, stage }) {
-  if (!GITHUB_TOKEN) {
-    throw new Error("GITHUB_TOKEN is not defined");
-  }
   console.log("Triggering deploy for", stage, "with run_id", run_id);
   // return fetch("https://api.github.com/repos/ZenMe-AU/ZBCorpArchitecture/actions/workflows/deploy.yml/dispatches", {
   //   method: "POST",
@@ -65,37 +43,32 @@ async function triggerDeploy({ run_id, stage }) {
   // });
 }
 
-async function fetchStatus() {
-  const url = `https://raw.githubusercontent.com/ZenMe-AU/ZBCorpArchitecture/dev/corpSetup/deploymentChangeset.json`;
-
-  const response = await fetch(url, {
-    cache: "no-store",
+async function fetchOrgList() {
+  const response = await fetch(`${url}/getOrgs`, {
+    credentials: "include",
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch status.json: ${response.status}`);
+    throw new Error(`Failed to fetch org list: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log("Fetched status.json", data);
-  return data;
-}
+  const merged = [
+    {
+      login: data.user.login,
+      type: "User",
+      id: data.user.id,
+      isInstalled: data.user.isInstalled,
+    },
+    ...data.orgList.map((org: { login: string; id: number; isInstalled: boolean }) => ({
+      login: org.login,
+      type: "Organization",
+      id: org.id,
+      isInstalled: org.isInstalled,
+    })),
+  ];
 
-async function fetchEnv() {
-  const url = "https://raw.githubusercontent.com/ZenMe-AU/ZBCorpArchitecture/dev/corpSetup/corp.env";
-
-  const response = await fetch(url, {
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch corp.env: ${response.status}`);
-  }
-
-  const text = await response.text();
-  const obj = parse(text);
-  console.log("Fetched corp.env", text, obj);
-  return obj;
+  return merged;
 }
 
 function sortStages(data: any[]) {
@@ -113,6 +86,8 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [env, setEnv] = useState<Record<string, string>>({});
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<any | null>(null);
 
   const handleRun = async () => {
     const now = Date.now();
@@ -147,11 +122,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchStatus()
-      .then((data) => setStages(sortStages(data.stages || [])))
+    fetchOrgList()
+      .then((data) => {
+        setAccounts(data);
+        setSelectedAccount(data[0] || null);
+      })
       .catch(console.error);
-
-    fetchEnv().then(setEnv).catch(console.error);
   }, []);
 
   const toggle = (stage: string) => {
@@ -160,6 +136,144 @@ export default function App() {
       [stage]: !prev[stage],
     }));
   };
+
+  async function triggerWorkflow(env: Record<string, string>) {
+    console.log("Triggering workflow with env", env);
+    if (!selectedAccount) {
+      console.error("No account selected");
+      return;
+    }
+    return await fetch(`${url}/triggerActions`, {
+      method: "POST",
+      body: JSON.stringify({
+        ref: "dev",
+        env: JSON.stringify(env),
+        owner: selectedAccount.login,
+        type: selectedAccount.type,
+        workflow_id: "planChanges.yml",
+      }),
+    });
+  }
+
+  const [repoCache, setRepoCache] = useState<Record<string, any[]>>({});
+  const [repos, setRepos] = useState<any[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState<string>("");
+
+  async function getRepos(account: any) {
+    const key = String(account.id);
+    if (repoCache[key]) {
+      setRepos(repoCache[key]);
+      return;
+    }
+    const params = new URLSearchParams({
+      owner: account.login,
+      type: account.type,
+    });
+    const res = await fetch(`${url}/getRepos?${params.toString()}`, {
+      credentials: "include",
+    });
+    const data = await res.json();
+    const repoList = data.repoList || [];
+    console.log("Fetched repos", repoList);
+    setRepoCache((prev) => ({
+      ...prev,
+      [key]: repoList,
+    }));
+    setRepos(repoList);
+  }
+
+  async function fetchStatus() {
+    const path = "corpSetup/deploymentChangeset.json";
+    const type = selectedAccount?.type;
+    const owner = selectedAccount?.login;
+    const repo = selectedRepo;
+    const params = new URLSearchParams({
+      path,
+      owner,
+      repo,
+      type,
+    });
+    const response = await fetch(`${url}/getContents?${params.toString()}`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch status.json: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Fetched status.json", data);
+    return data.content;
+  }
+
+  async function fetchEnv() {
+    const path = "corpSetup/corp.env";
+    const type = selectedAccount?.type;
+    const owner = selectedAccount?.login;
+    const repo = selectedRepo;
+    const params = new URLSearchParams({
+      path,
+      owner,
+      repo,
+      type,
+    });
+    const response = await fetch(`${url}/getContents?${params.toString()}`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch corp.env: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.content;
+    const obj = parse(text);
+    console.log("Fetched corp.env", text, obj);
+    return obj;
+  }
+
+  useEffect(() => {
+    if (selectedAccount) {
+      getRepos(selectedAccount);
+    }
+  }, [selectedAccount]);
+
+  useEffect(() => {
+    if (selectedRepo) {
+      fetchStatus()
+        .then((data) => setStages(sortStages(data.stages || [])))
+        .catch(console.error);
+
+      fetchEnv().then(setEnv).catch(console.error);
+    }
+  }, [selectedAccount, selectedRepo]);
+
+  useEffect(() => {
+    console.log("📦  changed:", repos);
+  }, [repos]);
+
+  const [isPrivate, setIsPrivate] = useState<boolean>(true);
+  const [includeAllBranch, setIncludeAllBranch] = useState<boolean>(false);
+  const [targetRepoName, setTargetRepoName] = useState<string>("testCorp");
+
+  async function generateRepo() {
+    if (!selectedAccount) {
+      console.error("No account selected");
+      return;
+    }
+    // TODO: check if repo already exists before creating
+    return await fetch(`${url}/generateRepo`, {
+      credentials: "include",
+      method: "POST",
+      body: JSON.stringify({
+        includeAllBranch,
+        isPrivate,
+        owner: selectedAccount?.login,
+        type: selectedAccount?.type,
+        repo: targetRepoName,
+      }),
+    });
+  }
 
   return (
     <Box sx={{ p: 4, background: "#f4f6f8", minHeight: "100vh" }}>
@@ -186,6 +300,54 @@ export default function App() {
             Run Status Update
           </Button>
         </Box>
+
+        <Box display="flex" alignItems="center">
+          <Button variant="contained" onClick={() => window.open("https://github.com/apps/zbdeployorgapp", "_blank")} disabled={refreshing}>
+            Install GitHub App
+          </Button>
+        </Box>
+
+        <Box display="flex" alignItems="center">
+          <Button variant="contained" onClick={generateRepo} disabled={refreshing}>
+            Clone Repo
+          </Button>
+        </Box>
+
+        <Box display="flex" alignItems="center">
+          <Button variant="contained" onClick={() => (window.location.href = `${url}/login`)} disabled={refreshing}>
+            login
+          </Button>
+        </Box>
+      </Box>
+
+      <Box display="flex" alignItems="center" gap={2}>
+        <Select
+          size="small"
+          value={selectedAccount?.id || ""}
+          onChange={(e) => {
+            const acc = accounts.find((a) => String(a.id) === e.target.value);
+            setSelectedAccount(acc);
+            if (acc) {
+              getRepos(acc);
+            }
+          }}
+        >
+          {accounts.map((acc) => (
+            <MenuItem key={acc.id} value={String(acc.id)}>
+              {acc.type === "User" ? "👤" : "🏢"} {acc.login} {acc.isInstalled && "✅"}
+            </MenuItem>
+          ))}
+        </Select>
+        <Select size="small" value={selectedRepo} onChange={(e) => setSelectedRepo(e.target.value)} displayEmpty>
+          <MenuItem value="" disabled>
+            Select Repo
+          </MenuItem>
+          {repos.map((repo) => (
+            <MenuItem key={repo.id} value={repo.name}>
+              📦 {repo.name}
+            </MenuItem>
+          ))}
+        </Select>
       </Box>
 
       {/* Timeline */}
@@ -246,7 +408,6 @@ export default function App() {
                 {item.status === "success" && (
                   <Button
                     onClick={() =>
-                      console.log("Deploying", item) ||
                       triggerDeploy({
                         run_id: item.runId,
                         stage: item.name,
@@ -262,7 +423,7 @@ export default function App() {
 
                 {/* Plan */}
                 {expanded[item.stage] && item.status === "success" && item.planJsonId && item.planJsonUrl !== "" && (
-                  <PlanView stage={item.stage} path={item.planJsonUrl} />
+                  <PlanView stage={item.stage} path={item.planJsonId} account={selectedAccount} repo={selectedRepo} />
                 )}
               </CardContent>
             </Card>

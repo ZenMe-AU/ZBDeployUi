@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Typography, Chip } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { fetchPlan } from "./fetchPlan";
 
 type PlanItem = {
@@ -48,7 +48,7 @@ function getActionColor(type: string) {
   }
 }
 
-export default function PlanView({ stage, path }: { stage: string; path: string }) {
+export default function PlanView({ stage, path, account, repo }: { stage: string; path: string; account: any; repo: string }) {
   const [plan, setPlan] = useState<PlanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function PlanView({ stage, path }: { stage: string; path: string 
   useEffect(() => {
     setLoading(true);
 
-    fetchPlan(path)
+    fetchPlan(path, account, repo)
       .then((data) => {
         setPlan(data.resource_changes || []);
         setError(null);
@@ -77,7 +77,7 @@ export default function PlanView({ stage, path }: { stage: string; path: string 
 
       return acc;
     },
-    { create: 0, update: 0, delete: 0, replace: 0 }
+    { create: 0, update: 0, delete: 0, replace: 0 },
   );
   const hasChanges = summary.create + summary.update + summary.delete + summary.replace > 0;
   if (loading) return <Typography>Loading plan...</Typography>;
