@@ -314,7 +314,11 @@ export default function App() {
         </Box>
 
         <Box display="flex" alignItems="center">
-          <Button variant="contained" onClick={() => (window.location.href = `${url}/login`)} disabled={refreshing}>
+          <Button
+            variant="contained"
+            onClick={() => (window.location.href = `${url}/login?returnUrl=${encodeURIComponent(window.location.href)}`)}
+            disabled={refreshing}
+          >
             login
           </Button>
         </Box>
