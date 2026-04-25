@@ -23,6 +23,15 @@ app.http("callback", {
       };
     }
 
+    const returnUrl = request.query.get("state") ? decodeURIComponent(request.query.get("state")) : null;
+    const allowedOrigin = getAllowedOrigin(returnUrl);
+    if (!allowedOrigin) {
+      return {
+        status: 400,
+        body: "Invalid returnUrl",
+      };
+    }
+
     const tableClient = TableClient.fromConnectionString(storageConnectionString, "tokens");
 
     // exchange code for access token
@@ -85,8 +94,24 @@ app.http("callback", {
       status: 302,
       headers: {
         "Set-Cookie": `github_session=${token}; Path=/; HttpOnly; Secure; SameSite=Lax`,
-        Location: "http://localhost:5173/",
+        Location: allowedOrigin,
       },
     };
   },
 });
+
+function getAllowedOrigin(origin) {
+  if (!origin) return "";
+  let parsedOrigin;
+  try {
+    parsedOrigin = new URL(origin).origin;
+  } catch {
+    return "";
+  }
+  const allowList = (process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim());
+  if (allowList.includes(parsedOrigin)) {
+    return origin;
+  }
+
+  return "";
+}
