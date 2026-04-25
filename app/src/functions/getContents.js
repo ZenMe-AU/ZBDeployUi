@@ -41,10 +41,11 @@ app.http("getContents", {
       });
       const content = Buffer.from(data.content, "base64").toString("utf8");
 
+      const allowedOrigin = getAllowedOrigin(request.headers.get("origin"));
       return {
         status: 200,
         headers: {
-          "Access-Control-Allow-Origin": "http://localhost:5173",
+          "Access-Control-Allow-Origin": allowedOrigin,
           "Access-Control-Allow-Credentials": "true",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -54,10 +55,11 @@ app.http("getContents", {
     } catch (err) {
       context.log(err);
 
+      const allowedOrigin = getAllowedOrigin(request.headers.get("origin"));
       return {
         status: 500,
         headers: {
-          "Access-Control-Allow-Origin": "http://localhost:5173",
+          "Access-Control-Allow-Origin": allowedOrigin,
           "Access-Control-Allow-Credentials": "true",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -89,4 +91,20 @@ function authenticateJWT(token) {
       resolve(decoded);
     });
   });
+}
+
+function getAllowedOrigin(origin) {
+  if (!origin) return "";
+  let parsedOrigin;
+  try {
+    parsedOrigin = new URL(origin).origin;
+  } catch {
+    return "";
+  }
+  const allowList = (process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim());
+  if (allowList.includes(parsedOrigin)) {
+    return parsedOrigin;
+  }
+
+  return "";
 }

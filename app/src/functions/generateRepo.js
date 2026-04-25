@@ -45,10 +45,11 @@ app.http("generateRepo", {
         },
       });
       console.log("👍res", res);
+      const allowedOrigin = getAllowedOrigin(request.headers.get("origin"));
       return {
         status: res.status,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": allowedOrigin,
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
         },
@@ -86,4 +87,20 @@ function authenticateJWT(token) {
       resolve(decoded);
     });
   });
+}
+
+function getAllowedOrigin(origin) {
+  if (!origin) return "";
+  let parsedOrigin;
+  try {
+    parsedOrigin = new URL(origin).origin;
+  } catch {
+    return "";
+  }
+  const allowList = (process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim());
+  if (allowList.includes(parsedOrigin)) {
+    return parsedOrigin;
+  }
+
+  return "";
 }
