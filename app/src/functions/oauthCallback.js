@@ -93,7 +93,7 @@ app.http("callback", {
     return {
       status: 302,
       headers: {
-        "Set-Cookie": `github_session=${token}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+        "Set-Cookie": `github_session=${token}; Path=/; HttpOnly; Secure; SameSite=None`, // TODO: consider setting SameSite to Lax or Strict in production for better security
         Location: allowedOrigin,
       },
     };
