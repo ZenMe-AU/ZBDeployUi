@@ -16,7 +16,14 @@ app.http("login", {
     }
     const state = encodeURIComponent(returnUrl);
 
-    const protocol = request.headers.get("x-forwarded-proto") || "https";
+    // const protocol = request.headers.get("x-forwarded-proto") || "https";
+
+    let protocol = "https";
+    try {
+      protocol = request.headers.get("x-forwarded-proto")?.split(",")[0] || new URL(request.url).protocol.replace(":", "");
+    } catch (err) {
+      return { status: 500, jsonBody: { error: err.message } };
+    }
     const host = request.headers.get("host");
     const redirectHost = `${protocol}://${host}`;
     const { OAUTH_CLIENT_ID: clientId } = process.env;

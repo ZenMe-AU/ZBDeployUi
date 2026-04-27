@@ -1,6 +1,7 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
 import { TableClient } from "@azure/data-tables";
+import { DefaultAzureCredential } from "@azure/identity";
 
 app.http("installCallback", {
   methods: ["GET"],
@@ -29,8 +30,11 @@ app.http("installCallback", {
       console.log("👍data", data);
 
       const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-      const tableClient = TableClient.fromConnectionString(storageConnectionString, "installations");
-      await tableClient.upsertEntity({
+      const credential = new DefaultAzureCredential();
+      const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+      const tokensClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
+      const installationsClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "installations", credential);
+      await installationsClient.upsertEntity({
         partitionKey: "account",
         rowKey: `${data.account.type}:${data.account.login}`,
         installationId: data.id,

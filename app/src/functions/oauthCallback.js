@@ -1,6 +1,7 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
 import { TableClient } from "@azure/data-tables";
+import { DefaultAzureCredential } from "@azure/identity";
 import jwt from "jsonwebtoken";
 
 app.http("callback", {
@@ -32,7 +33,9 @@ app.http("callback", {
       };
     }
 
-    const tableClient = TableClient.fromConnectionString(storageConnectionString, "tokens");
+    const credential = new DefaultAzureCredential();
+    const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
 
     // exchange code for access token
     const tokenRes = await fetch("https://github.com/login/oauth/access_token", {

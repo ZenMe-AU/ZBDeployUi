@@ -1,5 +1,7 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
+import { TableClient } from "@azure/data-tables";
+import { DefaultAzureCredential } from "@azure/identity";
 
 app.http("downloadArtifacts", {
   methods: ["GET"],
@@ -13,8 +15,11 @@ app.http("downloadArtifacts", {
       }
       const { id: userId, login } = await authenticateJWT(token);
       console.log("Authenticated user", { userId, login });
-      const tableClient = TableClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING, "tokens");
-      const { accessToken } = await tableClient.getEntity(String(userId), login); // TODO: need to decrypt access token
+
+      const credential = new DefaultAzureCredential();
+      const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+      const tokensTableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
+      const { accessToken } = await tokensTableClient.getEntity(String(userId), login); // TODO: need to decrypt access token
 
       const artifacts_id = request.query.get("artifacts_id");
       const type = request.query.get("type");
@@ -22,7 +27,7 @@ app.http("downloadArtifacts", {
       const repo = request.query.get("repo");
       const ref = request.query.get("ref") ?? "main";
 
-      const installationClient = TableClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING, "installations");
+      const installationClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "installations", credential);
       const { installationId } = await installationClient.getEntity("account", `${type}:${owner}`);
 
       const githubApp = new App({

@@ -1,6 +1,7 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
 import { TableClient } from "@azure/data-tables";
+import { DefaultAzureCredential } from "@azure/identity";
 import jwt from "jsonwebtoken";
 import { log } from "console";
 
@@ -15,8 +16,10 @@ app.http("getRepositories", {
         return { status: 401, jsonBody: { loggedIn: false } };
       }
       const { id: userId, login } = await authenticateJWT(token);
-      const tableClient = TableClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING, "tokens");
-      const { accessToken } = await tableClient.getEntity(String(userId), login); // TODO: need to decrypt access token
+      const credential = new DefaultAzureCredential();
+      const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+      const tokensClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
+      const { accessToken } = await tokensClient.getEntity(String(userId), login); // TODO: need to decrypt access token
 
       // get  repos
       const repos = await fetch("https://api.github.com/user/repos", {

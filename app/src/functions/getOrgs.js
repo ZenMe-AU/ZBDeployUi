@@ -1,6 +1,7 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
 import { TableClient } from "@azure/data-tables";
+import { DefaultAzureCredential } from "@azure/identity";
 import jwt from "jsonwebtoken";
 import { log } from "console";
 
@@ -16,8 +17,11 @@ app.http("getOrgs", {
       }
       const { id: userId, login } = await authenticateJWT(token);
       console.log("Authenticated user", { userId, login });
-      const tokenClient = TableClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING, "tokens");
-      const installationClient = TableClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING, "installations");
+
+      const credential = new DefaultAzureCredential();
+      const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+      const tokenClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
+      const installationClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "installations", credential);
       const { accessToken } = await tokenClient.getEntity(String(userId), login); // TODO: need to decrypt access token
       // // get user repos
       // const userRepos = await fetch("https://api.github.com/user/repos", {
