@@ -19,8 +19,8 @@ app.http("installCallback", {
     }
     if (setupAction === "install") {
       const githubApp = new App({
-        appId: process.env.APP_ID,
-        privateKey: Buffer.from(process.env.PRIVATE_KEY, "base64").toString("utf8"),
+        appId: process.env.GITHUB_APP_ID,
+        privateKey: Buffer.from(process.env.GITHUB_APP_PRIVATE_KEY, "base64").toString("utf8"),
       });
       const octokit = await githubApp.getInstallationOctokit(installationId);
       const { data } = await octokit.request("GET /app/installations/{installation_id}", {

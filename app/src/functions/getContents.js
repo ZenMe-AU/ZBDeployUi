@@ -19,8 +19,8 @@ app.http("getContents", {
       const { accessToken } = await tableClient.getEntity(String(userId), login); // TODO: need to decrypt access token
 
       const githubApp = new App({
-        appId: process.env.APP_ID,
-        privateKey: Buffer.from(process.env.PRIVATE_KEY, "base64").toString("utf8"),
+        appId: process.env.GITHUB_APP_ID,
+        privateKey: Buffer.from(process.env.GITHUB_APP_PRIVATE_KEY, "base64").toString("utf8"),
       });
 
       const path = request.query.get("path");

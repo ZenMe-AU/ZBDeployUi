@@ -8,8 +8,8 @@ app.http("callback", {
   authLevel: "anonymous",
   handler: async (request, context) => {
     const {
-      GITHUB_CLIENT_ID: clientId,
-      GITHUB_SECRET: clientSecret,
+      OAUTH_CLIENT_ID: clientId,
+      OAUTH_SECRET: clientSecret,
       JWT_SECRET: jwtSecret,
       AZURE_STORAGE_CONNECTION_STRING: storageConnectionString,
     } = process.env;
