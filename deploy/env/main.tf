@@ -116,7 +116,7 @@ resource "azurerm_function_app_flex_consumption" "fa" {
   }
 
   app_settings = {
-    APPLICATIONINSIGHTS_AUTHENTICATION_STRING = "Authorization=AAD" #Monitoring Metrics Publisher
+    APPLICATIONINSIGHTS_AUTHENTICATION_STRING = "Authorization=AAD" # need "Monitoring Metrics Publisher" role for this
     AzureWebJobsStorage__accountName          = var.storage_account_name
     AzureWebJobsStorage__credential           = "managedidentity"
     AzureWebJobsStorage__queueServiceUri      = "https://${var.storage_account_name}.queue.core.windows.net/"
@@ -125,14 +125,20 @@ resource "azurerm_function_app_flex_consumption" "fa" {
     GITHUB_APP_ID                             = var.github_app_id
     OAUTH_CLIENT_ID                           = var.oauth_client_id
     ALLOWED_ORIGINS                           = var.allowed_origins
-    JWT_SECRET                                = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.jwt.id})"
-    OAUTH_SECRET                              = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.oauth_secret.id})"
-    GITHUB_APP_PRIVATE_KEY                    = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.github_app_private_key.id})"
+    JWT_SECRET                                = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.jwt.versionless_id})"
+    OAUTH_SECRET                              = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.oauth_secret.versionless_id})"
+    GITHUB_APP_PRIVATE_KEY                    = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.github_app_private_key.versionless_id})"
     STORAGE_ACCOUNT_TABLE_NAME                = var.storage_account_table_name
   }
 
   site_config {
     application_insights_connection_string = azurerm_application_insights.ai.connection_string
+  }
+
+  lifecycle {
+    ignore_changes = [
+      app_settings["AzureWebJobsStorage"], # prevent Terraform from adding this back
+    ]
   }
 }
 
