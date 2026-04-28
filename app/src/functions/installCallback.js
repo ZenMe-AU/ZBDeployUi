@@ -31,7 +31,7 @@ app.http("installCallback", {
 
       const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
       const credential = new DefaultAzureCredential();
-      const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+      const storageAccountName = process.env.STORAGE_ACCOUNT_TABLE_NAME;
       const tokensClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
       const installationsClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "installations", credential);
       await installationsClient.upsertEntity({

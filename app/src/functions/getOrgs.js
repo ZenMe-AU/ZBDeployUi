@@ -19,7 +19,7 @@ app.http("getOrgs", {
       console.log("Authenticated user", { userId, login });
 
       const credential = new DefaultAzureCredential();
-      const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+      const storageAccountName = process.env.STORAGE_ACCOUNT_TABLE_NAME;
       const tokenClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
       const installationClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "installations", credential);
       const { accessToken } = await tokenClient.getEntity(String(userId), login); // TODO: need to decrypt access token

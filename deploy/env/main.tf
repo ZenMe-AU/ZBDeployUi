@@ -116,6 +116,7 @@ resource "azurerm_function_app_flex_consumption" "fa" {
     JWT_SECRET                                = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.jwt.id})"
     OAUTH_SECRET                              = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.oauth_secret.id})"
     GITHUB_APP_PRIVATE_KEY                    = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.github_app_private_key.id})"
+    STORAGE_ACCOUNT_TABLE_NAME                = var.storage_account_table_name
   }
 
   site_config {

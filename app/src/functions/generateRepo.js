@@ -20,7 +20,7 @@ app.http("generateRepo", {
       const { id: userId, login } = await authenticateJWT(token);
       console.log("Authenticated user", { userId, login });
       const credential = new DefaultAzureCredential();
-      const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+      const storageAccountName = process.env.STORAGE_ACCOUNT_TABLE_NAME;
       const tokensClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
       const { accessToken } = await tokensClient.getEntity(String(userId), login); // TODO: need to decrypt access token
 

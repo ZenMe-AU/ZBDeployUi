@@ -17,7 +17,7 @@ app.http("downloadArtifacts", {
       console.log("Authenticated user", { userId, login });
 
       const credential = new DefaultAzureCredential();
-      const storageAccountName = process.env.AzureWebJobsStorage__accountName;
+      const storageAccountName = process.env.STORAGE_ACCOUNT_TABLE_NAME;
       const tokensTableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
       const { accessToken } = await tokensTableClient.getEntity(String(userId), login); // TODO: need to decrypt access token
 
