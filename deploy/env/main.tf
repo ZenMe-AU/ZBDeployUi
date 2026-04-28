@@ -30,7 +30,7 @@ resource "azurerm_application_insights" "ai" {
 
 # =========================
 # SINGLE Storage Account
-# (Function runtime + Table)
+# (Function runtime)
 # =========================
 resource "azurerm_storage_account" "sa" {
   name                     = var.storage_account_name
@@ -39,8 +39,6 @@ resource "azurerm_storage_account" "sa" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
   account_kind             = "StorageV2"
-
-  shared_access_key_enabled = true # azurerm_storage_table requires this to be true, even if we won't use the keys
 }
 
 # =========================
@@ -53,11 +51,25 @@ resource "azurerm_storage_container" "fa" {
 }
 
 # =========================
+# SINGLE Storage Account(Table)
+# =========================
+resource "azurerm_storage_account" "table" {
+  name                     = var.storage_account_table_name
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  account_kind             = "StorageV2"
+
+  shared_access_key_enabled = true # azurerm_storage_table requires this to be true, even if we won't use the keys
+}
+
+# =========================
 # Table Storage (for GitHub App installation info)
 # =========================
 resource "azurerm_storage_table" "installations" {
   name                 = var.installations_table_name
-  storage_account_name = azurerm_storage_account.sa.name
+  storage_account_name = azurerm_storage_account.table.name
 }
 
 # =========================
@@ -65,7 +77,7 @@ resource "azurerm_storage_table" "installations" {
 # =========================
 resource "azurerm_storage_table" "tokens" {
   name                 = var.tokens_table_name
-  storage_account_name = azurerm_storage_account.sa.name
+  storage_account_name = azurerm_storage_account.table.name
 }
 
 # =========================
@@ -80,7 +92,7 @@ resource "azurerm_service_plan" "plan" {
 }
 
 # =========================
-# Function App (uses SAME storage)
+# Function App
 # =========================
 resource "azurerm_function_app_flex_consumption" "fa" {
   name                = var.function_app_name

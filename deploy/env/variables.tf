@@ -39,6 +39,12 @@ variable "storage_account_name" {
   default     = "zbinstallerstorage"
 }
 
+variable "storage_account_table_name" {
+  description = "Storage account name for table"
+  type        = string
+  default     = "zbinstallertable"
+}
+
 variable "installations_table_name" {
   description = "Table name for storing GitHub App installation info"
   type        = string
