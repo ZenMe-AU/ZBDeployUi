@@ -1,6 +1,7 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
 import { getTableClient } from "../utils/tableStorage.js";
+import jwt from "jsonwebtoken";
 
 app.http("callback", {
   methods: ["GET"],
