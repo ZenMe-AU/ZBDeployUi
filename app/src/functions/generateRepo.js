@@ -1,8 +1,6 @@
 import { app } from "@azure/functions";
 import { Octokit } from "octokit";
-import { TableClient } from "@azure/data-tables";
-import { DefaultAzureCredential } from "@azure/identity";
-import jwt from "jsonwebtoken";
+import { verifyAuth } from "../utils/auth.js";
 
 app.http("generateRepo", {
   methods: ["POST"],
@@ -12,17 +10,7 @@ app.http("generateRepo", {
       const template_owner = "ZenMe-AU";
       const template_repo = "ZBCorpArchitecture";
 
-      const cookie = request.headers.get("cookie");
-      const token = parseCookie(cookie)?.github_session;
-      if (!token) {
-        return { status: 401, jsonBody: { loggedIn: false } };
-      }
-      const { id: userId, login } = await authenticateJWT(token);
-      console.log("Authenticated user", { userId, login });
-      const credential = new DefaultAzureCredential();
-      const storageAccountName = process.env.STORAGE_ACCOUNT_TABLE_NAME;
-      const tokensClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
-      const { accessToken } = await tokensClient.getEntity(String(userId), login); // TODO: need to decrypt access token
+      const { accessToken } = await verifyAuth(request.headers.get("cookie"));
 
       // only use oauth token to generate repo
       const octokit = new Octokit({
@@ -31,7 +19,7 @@ app.http("generateRepo", {
       const body = await request.json();
       console.log("👍body", body);
       const { isPrivate = true, includeAllBranch = false, owner, type, repo = template_repo } = body;
-      // const installationClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "installations", credential);
+      // const installationClient = getTableClient({ tableName: "installations" });
       // const { installationId } = await installationClient.getEntity("account", `${type}:${owner}`);
       // const githubApp = new App({
       //   appId: process.env.GITHUB_APP_ID,
@@ -70,30 +58,6 @@ app.http("generateRepo", {
     }
   },
 });
-
-function parseCookie(cookieHeader = "") {
-  return Object.fromEntries(
-    cookieHeader
-      .split("; ")
-      .filter(Boolean)
-      .map((v) => {
-        const [key, ...rest] = v.split("=");
-        return [key, rest.join("=")];
-      }),
-  );
-}
-
-function authenticateJWT(token) {
-  return new Promise((resolve, reject) => {
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) return reject(new Error("Invalid token"));
-
-      console.log("🛄 Decoded JWT", decoded);
-      resolve(decoded);
-    });
-  });
-}
-
 function getAllowedOrigin(origin) {
   if (!origin) return "";
   let parsedOrigin;

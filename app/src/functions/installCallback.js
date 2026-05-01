@@ -1,7 +1,6 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
-import { TableClient } from "@azure/data-tables";
-import { DefaultAzureCredential } from "@azure/identity";
+import { getTableClient } from "../utils/tableStorage.js";
 
 app.http("installCallback", {
   methods: ["GET"],
@@ -29,11 +28,8 @@ app.http("installCallback", {
       });
       console.log("👍data", data);
 
-      const storageConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-      const credential = new DefaultAzureCredential();
-      const storageAccountName = process.env.STORAGE_ACCOUNT_TABLE_NAME;
-      const tokensClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
-      const installationsClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "installations", credential);
+      const tokensClient = getTableClient({ tableName: "tokens" });
+      const installationsClient = getTableClient({ tableName: "installations" });
       await installationsClient.upsertEntity({
         partitionKey: "account",
         rowKey: `${data.account.type}:${data.account.login}`,

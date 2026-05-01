@@ -1,8 +1,6 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
-import { TableClient } from "@azure/data-tables";
-import { DefaultAzureCredential } from "@azure/identity";
-import jwt from "jsonwebtoken";
+import { getTableClient } from "../utils/tableStorage.js";
 
 app.http("callback", {
   methods: ["GET"],
@@ -33,9 +31,7 @@ app.http("callback", {
       };
     }
 
-    const credential = new DefaultAzureCredential();
-    const storageAccountName = process.env.STORAGE_ACCOUNT_TABLE_NAME;
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
+    const tableClient = getTableClient({ tableName: "tokens" });
 
     // exchange code for access token
     const tokenRes = await fetch("https://github.com/login/oauth/access_token", {

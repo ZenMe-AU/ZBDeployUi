@@ -1,25 +1,13 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
-import { TableClient } from "@azure/data-tables";
-import { DefaultAzureCredential } from "@azure/identity";
-import jwt from "jsonwebtoken";
-import { log } from "console";
+import { verifyAuth } from "../utils/auth.js";
 
 app.http("getRepositories", {
   methods: ["GET"],
   authLevel: "anonymous",
   handler: async (request, context) => {
     try {
-      const cookie = request.headers.get("cookie");
-      const token = parseCookie(cookie)?.github_session;
-      if (!token) {
-        return { status: 401, jsonBody: { loggedIn: false } };
-      }
-      const { id: userId, login } = await authenticateJWT(token);
-      const credential = new DefaultAzureCredential();
-      const storageAccountName = process.env.STORAGE_ACCOUNT_TABLE_NAME;
-      const tokensClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, "tokens", credential);
-      const { accessToken } = await tokensClient.getEntity(String(userId), login); // TODO: need to decrypt access token
+      const { accessToken } = await verifyAuth(request.headers.get("cookie"));
 
       // get  repos
       const repos = await fetch("https://api.github.com/user/repos", {
@@ -51,30 +39,6 @@ app.http("getRepositories", {
     }
   },
 });
-
-function parseCookie(cookieHeader = "") {
-  return Object.fromEntries(
-    cookieHeader
-      .split("; ")
-      .filter(Boolean)
-      .map((v) => {
-        const [key, ...rest] = v.split("=");
-        return [key, rest.join("=")];
-      }),
-  );
-}
-
-function authenticateJWT(token) {
-  return new Promise((resolve, reject) => {
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) return reject(new Error("Invalid token"));
-
-      console.log("🛄 Decoded JWT", decoded);
-      resolve(decoded);
-    });
-  });
-}
-
 function getAllowedOrigin(origin) {
   if (!origin) return "";
   let parsedOrigin;
