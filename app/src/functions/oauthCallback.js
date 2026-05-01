@@ -1,6 +1,7 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
 import { getTableClient } from "../utils/tableStorage.js";
+import { getAllowedOrigin } from "../utils/cors.js";
 import jwt from "jsonwebtoken";
 
 app.http("callback", {
@@ -99,19 +100,3 @@ app.http("callback", {
     };
   },
 });
-
-function getAllowedOrigin(origin) {
-  if (!origin) return "";
-  let parsedOrigin;
-  try {
-    parsedOrigin = new URL(origin).origin;
-  } catch {
-    return "";
-  }
-  const allowList = (process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim());
-  if (allowList.includes(parsedOrigin)) {
-    return origin;
-  }
-
-  return "";
-}

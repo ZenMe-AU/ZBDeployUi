@@ -1,5 +1,6 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
+import { getAllowedOrigin } from "../utils/cors.js";
 
 app.http("logout", {
   methods: ["GET"],
@@ -22,19 +23,3 @@ app.http("logout", {
     };
   },
 });
-
-function getAllowedOrigin(origin) {
-  if (!origin) return "";
-  let parsedOrigin;
-  try {
-    parsedOrigin = new URL(origin).origin;
-  } catch {
-    return "";
-  }
-  const allowList = (process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim());
-  if (allowList.includes(parsedOrigin)) {
-    return origin;
-  }
-
-  return "";
-}

@@ -1,5 +1,6 @@
 import { app } from "@azure/functions";
 import { App } from "octokit";
+import { getAllowedOrigin } from "../utils/cors.js";
 
 app.http("login", {
   methods: ["GET"],
@@ -9,9 +10,8 @@ app.http("login", {
     if (!returnUrl) {
       return { status: 400, jsonBody: { error: "missing returnUrl" } };
     }
-    const allowList = (process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim());
-    const returnUrlObj = new URL(returnUrl);
-    if (!allowList.includes(returnUrlObj.origin)) {
+    const allowedOrigin = getAllowedOrigin(returnUrl);
+    if (!allowedOrigin) {
       return { status: 400, jsonBody: { error: "host not allowed" } };
     }
     const state = encodeURIComponent(returnUrl);
