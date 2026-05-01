@@ -1,5 +1,4 @@
 import { app } from "@azure/functions";
-import { App } from "octokit";
 import { getAllowedOrigin } from "../utils/cors.js";
 
 app.http("logout", {

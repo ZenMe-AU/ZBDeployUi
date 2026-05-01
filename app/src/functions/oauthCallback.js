@@ -1,5 +1,4 @@
 import { app } from "@azure/functions";
-import { App } from "octokit";
 import { getTableClient } from "../utils/tableStorage.js";
 import { getAllowedOrigin } from "../utils/cors.js";
 import jwt from "jsonwebtoken";
