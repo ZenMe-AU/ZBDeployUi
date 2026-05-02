@@ -1,5 +1,6 @@
 import { app } from "@azure/functions";
 import { Octokit } from "octokit";
+import { verifyAuth } from "../utils/auth.js";
 import { getTableClient } from "../utils/tableStorage.js";
 import { corsWrapper } from "../utils/cors.js";
 
@@ -23,8 +24,11 @@ app.http("downloadArtifacts", {
       repo,
       artifacts_id,
       ref,
+      headers: {
+        "X-GitHub-Api-Version": "2026-03-10",
+      },
     });
-    const content = Buffer.from(data.content, "base64").toString("utf8");
+    const content = Buffer.from(data).toString("base64");
     return {
       jsonBody: { success: true, content },
     };
