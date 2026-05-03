@@ -15,9 +15,7 @@ app.http("checkTemplate", {
     const owner = request.query.get("owner");
     const repo = request.query.get("repo");
 
-    const octokit = new Octokit({
-      auth: accessToken,
-    });
+    const octokit = new Octokit({ auth: accessToken });
     const { data } = await octokit.request("GET /repos/{owner}/{repo}", { owner, repo });
     const isTemplate = data.template_repository && data.template_repository.owner.login === templateOwner ? true : false;
     const templateName = isTemplate ? data.template_repository.full_name : undefined;

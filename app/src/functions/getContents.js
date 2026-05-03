@@ -15,9 +15,7 @@ app.http("getContents", {
     const repo = request.query.get("repo");
     const ref = request.query.get("ref") ?? "main";
 
-    const octokit = new Octokit({
-      auth: accessToken,
-    });
+    const octokit = new Octokit({ auth: accessToken });
     const { data } = await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
       owner,
       repo,

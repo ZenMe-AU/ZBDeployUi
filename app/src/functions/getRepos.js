@@ -13,9 +13,7 @@ app.http("getRepos", {
     const type = request.query.get("type");
     const owner = request.query.get("owner");
 
-    const octokit = new Octokit({
-      auth: accessToken,
-    });
+    const octokit = new Octokit({ auth: accessToken });
     const uri = type === "User" ? "/user/repos" : `/orgs/${owner}/repos`;
     const { data } = await octokit.request(`GET ${uri}`);
     const repoList = data.filter((repo) => repo.owner.type === type).map((repo) => ({ name: repo.name, id: repo.id, full_name: repo.full_name }));

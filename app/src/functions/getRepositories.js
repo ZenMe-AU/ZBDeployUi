@@ -9,9 +9,7 @@ app.http("getRepositories", {
   handler: corsWrapper(async (request, context) => {
     const { accessToken } = await verifyAuth(request.headers.get("cookie"));
 
-    const octokit = new Octokit({
-      auth: accessToken,
-    });
+    const octokit = new Octokit({ auth: accessToken });
     const { data } = await octokit.request(`GET user/repos`);
     const repoList = data.map((repo) => ({
       name: repo.name,

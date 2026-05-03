@@ -11,9 +11,7 @@ app.http("getOrgs", {
     const { user, accessToken } = await verifyAuth(request.headers.get("cookie"));
     const { userId, login } = user;
 
-    const octokit = new Octokit({
-      auth: accessToken,
-    });
+    const octokit = new Octokit({ auth: accessToken });
     const { data } = await octokit.request(`GET /user/orgs`);
     const orgList = data.map((org) => ({ login: org.login, id: org.id }));
     return {

@@ -16,9 +16,7 @@ app.http("downloadArtifacts", {
     const repo = request.query.get("repo");
     const ref = request.query.get("ref") ?? "main";
 
-    const octokit = new Octokit({
-      auth: accessToken,
-    });
+    const octokit = new Octokit({ auth: accessToken });
     const { data } = await octokit.request("GET /repos/{owner}/{repo}/actions/artifacts/{artifacts_id}/zip", {
       owner,
       repo,

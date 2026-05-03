@@ -16,9 +16,7 @@ app.http("generateRepo", {
     console.log("👍body", body);
     const { isPrivate = true, includeAllBranch = false, owner, type, repo = template_repo } = body;
 
-    const octokit = new Octokit({
-      auth: accessToken,
-    });
+    const octokit = new Octokit({ auth: accessToken });
     const { data } = await octokit.request(`POST /repos/{template_owner}/{template_repo}/generate`, {
       template_owner,
       template_repo,

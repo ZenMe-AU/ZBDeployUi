@@ -13,9 +13,7 @@ app.http("triggerActions", {
     const body = await request.json();
     const { env, workflow_id, ref = "main", type, owner, repo } = body;
 
-    const octokit = new Octokit({
-      auth: accessToken,
-    });
+    const octokit = new Octokit({ auth: accessToken });
     const { data } = await octokit.request(`POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches`, {
       owner,
       repo,
