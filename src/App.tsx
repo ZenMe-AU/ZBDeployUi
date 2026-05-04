@@ -543,6 +543,8 @@ export default function AppDashboard() {
                   presentKeys={presentSecretKeys}
                   secretsStatus={awsSecrets}
                   repoFullName={repoFullName}
+                  onRecheck={handleRecheck}
+                  rechecking={rechecking}
                 />
               </PipelineCard>
 
