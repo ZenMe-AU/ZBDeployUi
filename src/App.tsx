@@ -23,7 +23,8 @@ import RepoCard from "./cards/RepoCard";
 import SecretsCard from "./cards/SecretsCard";
 import EnvCard from "./cards/EnvCard";
 import StatusCard from "./cards/StatusCard";
-import StagesCard from "./cards/StagesCard";
+import { StageItem } from "./cards/StagesCard";
+import { STAGE_STATUS_CONFIG } from "./types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -576,30 +577,88 @@ export default function AppDashboard() {
                 <StatusCard running={running} countdown={countdown} lastRunTime={lastRunTime} onRun={handleRunStatusUpdate} runError={runError} />
               </PipelineCard>
 
-              {/* Step 5 — Stages */}
-              <PipelineCard
-                step={6}
-                title="Deployment Pipeline"
-                subtitle={`${pipeline.stages.length} stages · ${pipeline.label}`}
-                status={cardStatus.stages}
-                expanded={expanded.stages}
-                onToggle={() => toggleCard("stages")}
-                disabled={!isCloneRepo}
-                hasNext={false}
-              >
-                <StagesCard
-                  stages={stages}
-                  stageDefinitions={pipeline.stages}
-                  expanded={stagesExpanded}
-                  onToggle={(key) => setStagesExpanded((prev) => ({ ...prev, [key]: !prev[key] }))}
-                  statusFileFound={statusFileFound}
-                  loading={stagesLoading}
-                  cardStatus={cardStatus}
-                  envEntries={envEntries}
-                  account={selectedAccount}
-                  repoName={selectedRepo?.name || ""}
-                />
-              </PipelineCard>
+              {!statusFileFound && isCloneRepo && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2, my: 3 }}>
+                  <Box sx={{ flex: 1, height: "1px", background: "linear-gradient(to right, #f1f5f9, #cbd5e1)" }} />
+                  <Typography
+                    sx={{
+                      fontSize: "0.65rem",
+                      letterSpacing: "0.15em",
+                      color: "#94a3b8",
+                      textTransform: "uppercase",
+                      fontFamily: "'IBM Plex Mono', monospace",
+                    }}
+                  >
+                    No status file found
+                  </Typography>
+                  <Box sx={{ flex: 1, height: "1px", background: "linear-gradient(to left, #f1f5f9, #cbd5e1)" }} />
+                </Box>
+              )}
+
+              {/* Steps 5~N — Stages */}
+              {pipeline.stages.map((stageDef, index) => {
+                const stage = stages.find((s) => s.stage === stageDef.key) ?? {
+                  stage: stageDef.key,
+                  status: "pending" as const,
+                };
+                const cfg = STAGE_STATUS_CONFIG[stage.status];
+
+                return (
+                  <PipelineCard
+                    key={stageDef.key}
+                    step={6 + index}
+                    title={stageDef.label}
+                    subtitle={cfg.label}
+                    status={
+                      cardStatus.stages === "loading"
+                        ? "loading"
+                        : stage.status === "deployed"
+                          ? "complete"
+                          : stage.status === "success"
+                            ? "warning"
+                            : stage.status === "failed"
+                              ? "error"
+                              : "idle"
+                    }
+                    expanded={!!stagesExpanded[stageDef.key]}
+                    onToggle={() => setStagesExpanded((prev) => ({ ...prev, [stageDef.key]: !prev[stageDef.key] }))}
+                    disabled={!isCloneRepo}
+                    hasNext={index < pipeline.stages.length - 1}
+                    action={
+                      stage.status === "success" ? (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log("Deploy", stageDef.key, stage.runId);
+                          }}
+                          sx={{
+                            background: "#f97316",
+                            fontFamily: "'IBM Plex Mono', monospace",
+                            fontSize: "0.72rem",
+                            textTransform: "none",
+                            py: 0.4,
+                            px: 1.5,
+                            "&:hover": { background: "#ea6c0a" },
+                          }}
+                        >
+                          Deploy
+                        </Button>
+                      ) : undefined
+                    }
+                  >
+                    <StageItem
+                      stageDef={stageDef}
+                      stage={stage}
+                      cardStatus={cardStatus}
+                      envEntries={envEntries}
+                      account={selectedAccount}
+                      repoName={selectedRepo?.name || ""}
+                    />
+                  </PipelineCard>
+                );
+              })}
             </Box>
           )}
         </Box>

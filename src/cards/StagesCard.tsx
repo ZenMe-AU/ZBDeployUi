@@ -3,8 +3,7 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import type { CardId, CardStatus, EnvEntry, Prerequisite, Stage, StageDefinition } from "../types.ts";
-import { STAGE_STATUS_CONFIG } from "../types.ts";
-import PlanView from "../planView";
+import PlanView from "../component/PlanView.tsx";
 
 // ─── Prerequisite check ───────────────────────────────────────────────────────
 
@@ -37,146 +36,57 @@ function prereqLabel(prereq: Prerequisite): string {
 
 // ─── Single stage card ────────────────────────────────────────────────────────
 
-function StageItem({
-  stageDef,
-  stage,
-  expanded,
-  onToggle,
-  cardStatus,
-  envEntries,
-  account,
-  repoName,
-}: {
-  stageDef: StageDefinition;
-  stage: Stage;
-  expanded: boolean;
-  onToggle: () => void;
-  cardStatus: Record<CardId, CardStatus>;
-  envEntries: EnvEntry[];
-  account: any;
-  repoName: string;
-}) {
-  const cfg = STAGE_STATUS_CONFIG[stage.status] ?? { color: "#94a3b8", label: stage.status };
-  const hasDetails = stage.status === "success" && !!stage.planJsonId && stage.planJsonUrl !== "";
-
+export function StageItem({ stageDef, stage, cardStatus, envEntries, account, repoName }) {
   const prereqResults = stageDef.prerequisites.map((p) => ({
     label: prereqLabel(p),
     met: checkPrerequisite(p, cardStatus, envEntries),
   }));
-  const allPrereqsMet = prereqResults.every((r) => r.met);
-  const hasUnmetPrereqs = !allPrereqsMet && stage.status === "pending";
+
+  const hasDetails = stage.status === "success" && !!stage.planJsonId && stage.planJsonUrl !== "";
 
   return (
-    <Box
-      sx={{
-        border: "1px solid",
-        borderColor:
-          stage.status === "deployed" ? "#bbf7d0" : stage.status === "failed" ? "#fecaca" : stage.status === "success" ? "#fed7aa" : "#e2e8f0",
-        borderRadius: "8px",
-        background: "#ffffff",
-        overflow: "hidden",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-      }}
-    >
-      {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 2,
-          py: 1.5,
-          cursor: hasDetails || hasUnmetPrereqs ? "pointer" : "default",
-          "&:hover": hasDetails || hasUnmetPrereqs ? { background: "#fafafa" } : {},
-        }}
-        onClick={hasDetails || hasUnmetPrereqs ? onToggle : undefined}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          {/* Status dot */}
-          <Box
+    <Box>
+      {/* Prerequisites */}
+      {stageDef.prerequisites.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography
             sx={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: cfg.color,
-              boxShadow: `0 0 6px ${cfg.color}55`,
-              flexShrink: 0,
+              fontSize: "0.68rem",
+              color: "#94a3b8",
+              fontFamily: "'IBM Plex Mono', monospace",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              mb: 1,
             }}
-          />
-          <Box>
-            <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: "#0f172a", fontFamily: "'IBM Plex Mono', monospace" }}>
-              {stageDef.label}
-            </Typography>
-            <Typography sx={{ fontSize: "0.7rem", color: cfg.color, fontFamily: "'IBM Plex Mono', monospace", mt: 0.125 }}>{cfg.label}</Typography>
+          >
+            Prerequisites
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            {prereqResults.map((r, i) => (
+              <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {r.met ? (
+                  <CheckCircleIcon sx={{ fontSize: 13, color: "#22c55e" }} />
+                ) : (
+                  <RadioButtonUncheckedIcon sx={{ fontSize: 13, color: "#cbd5e1" }} />
+                )}
+                <Typography sx={{ fontSize: "0.72rem", color: r.met ? "#475569" : "#94a3b8", fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {r.label}
+                </Typography>
+              </Box>
+            ))}
           </Box>
         </Box>
+      )}
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {stage.status === "success" && (
-            <Button
-              size="small"
-              variant="contained"
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log("Deploy", stage.stage, stage.runId);
-              }}
-              sx={{
-                background: "#f97316",
-                fontSize: "0.7rem",
-                textTransform: "none",
-                fontFamily: "'IBM Plex Mono', monospace",
-                py: 0.4,
-                px: 1.25,
-                "&:hover": { background: "#ea6c0a" },
-              }}
-            >
-              Deploy
-            </Button>
-          )}
-          {hasUnmetPrereqs && <WarningAmberIcon sx={{ fontSize: 16, color: "#ea580c" }} />}
-        </Box>
-      </Box>
+      {/* Plan */}
+      {hasDetails && <PlanView stage={stage.stage} path={stage.planJsonId!} account={account} repo={repoName} />}
 
-      {/* Expandable: plan details or unmet prerequisites */}
-      <Collapse in={expanded}>
-        <Divider sx={{ borderColor: "#f1f5f9" }} />
-        <Box sx={{ px: 2, py: 1.5 }}>
-          {/* Prerequisites */}
-          {stageDef.prerequisites.length > 0 && (
-            <Box sx={{ mb: hasDetails ? 2 : 0 }}>
-              <Typography
-                sx={{
-                  fontSize: "0.68rem",
-                  color: "#94a3b8",
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  mb: 1,
-                }}
-              >
-                Prerequisites
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                {prereqResults.map((r, i) => (
-                  <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {r.met ? (
-                      <CheckCircleIcon sx={{ fontSize: 13, color: "#22c55e" }} />
-                    ) : (
-                      <RadioButtonUncheckedIcon sx={{ fontSize: 13, color: "#cbd5e1" }} />
-                    )}
-                    <Typography sx={{ fontSize: "0.72rem", color: r.met ? "#475569" : "#94a3b8", fontFamily: "'IBM Plex Mono', monospace" }}>
-                      {r.label}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          )}
-
-          {/* Plan view */}
-          {hasDetails && <PlanView stage={stage.stage} path={stage.planJsonId!} account={account} repo={repoName} />}
-        </Box>
-      </Collapse>
+      {/* No plan message */}
+      {!hasDetails && stage.status !== "pending" && (
+        <Typography sx={{ fontSize: "0.72rem", color: stage.status === "failed" ? "#ef4444" : "#cbd5e1", fontFamily: "'IBM Plex Mono', monospace" }}>
+          No plan available for this stage.
+        </Typography>
+      )}
     </Box>
   );
 }

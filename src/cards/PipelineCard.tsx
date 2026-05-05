@@ -26,9 +26,21 @@ type Props = {
   children: React.ReactNode;
   // Connector line to next card
   hasNext?: boolean;
+  action?: React.ReactNode;
 };
 
-export default function PipelineCard({ step, title, subtitle, status, expanded, onToggle, disabled = false, children, hasNext = true }: Props) {
+export default function PipelineCard({
+  step,
+  title,
+  subtitle,
+  status,
+  expanded,
+  onToggle,
+  disabled = false,
+  children,
+  hasNext = true,
+  action,
+}: Props) {
   const indicator = STATUS_INDICATOR[status];
 
   return (
@@ -128,9 +140,12 @@ export default function PipelineCard({ step, title, subtitle, status, expanded, 
               </Typography>
               {subtitle && <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", mt: 0.25 }}>{subtitle}</Typography>}
             </Box>
-            <IconButton size="small" sx={{ color: "#cbd5e1", "&:hover": { color: "#94a3b8" } }}>
-              {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-            </IconButton>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {action}
+              <IconButton size="small" sx={{ color: "#cbd5e1", "&:hover": { color: "#94a3b8" } }}>
+                {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+              </IconButton>
+            </Box>
           </Box>
 
           {/* Content */}
