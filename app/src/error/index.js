@@ -19,6 +19,7 @@ export class HttpError extends Error {
 /**
  * Common error helpers
  */
+export const MissingParam = (options = {}) => new HttpError(400, "Missing required parameter", options);
 export const Unauthorized = (options = {}) => new HttpError(401, "Unauthorized", options);
 export const Forbidden = (options = {}) => new HttpError(403, "Forbidden", options);
 export const NotFound = (options = {}) => new HttpError(404, "Not Found", options);

@@ -1,0 +1,43 @@
+import { app } from "@azure/functions";
+import { Octokit } from "octokit";
+import { verifyAuth } from "../utils/auth.js";
+import { getTableClient } from "../utils/tableStorage.js";
+import { corsWrapper } from "../utils/cors.js";
+import { MissingParam } from "../error/index.js";
+
+app.http("createBranch", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: corsWrapper(async (request, context) => {
+    const { accessToken } = await verifyAuth(request.headers.get("cookie"));
+
+    const body = await request.json();
+    const { owner, type, repo, source = "main", branch } = body;
+    if (!owner || !type || !repo || !branch) {
+      throw MissingParam();
+    }
+
+    const octokit = new Octokit({ auth: accessToken });
+    const { data: originBranchData } = await octokit.request("GET /repos/{owner}/{repo}/git/ref/{ref}", {
+      owner,
+      repo,
+      ref: `heads/${source}`,
+      headers: {
+        "X-GitHub-Api-Version": "2026-03-10",
+      },
+    });
+    const { data: newBranchData } = await octokit.request("POST /repos/{owner}/{repo}/git/refs", {
+      owner,
+      repo,
+      ref: `refs/heads/${branch}`,
+      sha: originBranchData.object.sha,
+      headers: {
+        "X-GitHub-Api-Version": "2026-03-10",
+      },
+    });
+    console.log("👍newBranchData", newBranchData);
+    return {
+      jsonBody: { success: true, branch: { name: newBranchData.ref.replace("refs/heads/", ""), commit: newBranchData.object.sha } },
+    };
+  }),
+});
