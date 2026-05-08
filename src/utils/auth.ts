@@ -3,7 +3,7 @@ import { generateRandomString, generateCodeChallenge } from "./pkce";
 const CLIENT_ID = "Ov23lizON4etUmAaTHRY";
 // const CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID;
 
-const REDIRECT_URI = `${window.location.origin}/callback`;
+const REDIRECT_URI = `${window.location.origin}/#/callback`;
 
 export async function loginWithGithub() {
   const verifier = generateRandomString();
