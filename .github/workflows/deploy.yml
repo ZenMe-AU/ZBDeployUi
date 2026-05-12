@@ -27,10 +27,10 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: pnpm install
+        run: npm install
 
       - name: Build project
-        run: pnpm run build
+        run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
