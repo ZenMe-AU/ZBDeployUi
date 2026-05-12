@@ -1,7 +1,7 @@
 import { generateRandomString, generateCodeChallenge } from "./pkce";
 
-const CLIENT_ID = "Ov23lizON4etUmAaTHRY";
-// const CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID;
+// const CLIENT_ID = "Ov23lizON4etUmAaTHRY"; // TODO: move to env variable
+const CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID;
 
 const REDIRECT_URI = `${window.location.origin}/callback.html`;
 

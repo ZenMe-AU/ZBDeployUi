@@ -6,8 +6,8 @@ export default function Callback() {
       const code = new URLSearchParams(window.location.search).get("code");
       console.log("code", code);
       const verifier = sessionStorage.getItem("pkce_verifier");
-
-      const res = await fetch("https://github.com/login/oauth/access_token", {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const res = await fetch(`${apiUrl}/getAccessToken`, {
         method: "POST",
         headers: {
           Accept: "application/json",
