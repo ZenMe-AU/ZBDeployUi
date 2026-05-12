@@ -17,7 +17,7 @@ export default function Callback() {
           client_id: import.meta.env.VITE_GITHUB_CLIENT_ID,
           code,
           code_verifier: verifier,
-          redirect_uri: `${window.location.origin}/#`,
+          redirect_uri: `${window.location.origin}/`,
         }),
       });
       console.log("res", res);
